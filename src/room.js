@@ -68,16 +68,19 @@ export function joinRoom({ code, nick, stream, handlers }) {
     setMic(enabled) {
       stream?.getAudioTracks().forEach((t) => (t.enabled = enabled));
     },
-    async startScreen(onEnded) {
+    async startScreen(fps, onEnded) {
       if (screen) return true;
       try {
-        screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+        screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: fps, max: fps } }, audio: false });
       } catch {
         return false;
       }
       screen.getVideoTracks()[0].onended = () => { stopScreen(); onEnded(); };
       room.addStream(screen, { metadata: { type: 'screen' } });
       return true;
+    },
+    setScreenFps(fps) {
+      screen?.getVideoTracks()[0]?.applyConstraints({ frameRate: { ideal: fps, max: fps } }).catch(() => {});
     },
     stopScreen,
     leave() {

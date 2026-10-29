@@ -130,7 +130,9 @@ $('btn-mic').onclick = () => {
 };
 
 const canShare = !!navigator.mediaDevices?.getDisplayMedia;
-$('btn-screen').hidden = !canShare;
+$('btn-screen').hidden = $('screen-fps').hidden = !canShare;
+const fps = () => Number($('screen-fps').value);
+$('screen-fps').onchange = () => session?.sharing && session.room.setScreenFps(fps());
 $('btn-screen').onclick = async () => {
   const label = () => ($('btn-screen').textContent = 'Ekran paylaş');
   if (session.sharing) {
@@ -138,7 +140,7 @@ $('btn-screen').onclick = async () => {
     session.room.stopScreen();
     return label();
   }
-  if (await session.room.startScreen(() => { session.sharing = false; label(); })) {
+  if (await session.room.startScreen(fps(), () => { session.sharing = false; label(); })) {
     session.sharing = true;
     $('btn-screen').textContent = 'Paylaşımı durdur';
   }
