@@ -32,7 +32,7 @@ async function join() {
 
   const s = (session = {
     nick, code, stream, peers: [], speaking: new Set(),
-    stops: new Map(), audios: new Map(), micOn: true,
+    stops: new Map(), audios: new Map(), micOn: true, screenState: 'off', appliedFps: 30,
   });
   s.room = joinRoom({
     code, nick, stream,
@@ -69,6 +69,14 @@ async function join() {
         $('screens').append(fig);
       },
       onScreenStop: removeScreen,
+      onScreenState(state) {
+        if (s !== session) return; // a picker from a room we already left
+        s.screenState = state;
+        const btn = $('btn-screen');
+        btn.disabled = state === 'starting';
+        btn.textContent = { off: 'Ekran paylaş', starting: 'Ekran seçiliyor…', on: 'Paylaşımı durdur' }[state];
+        if (state === 'on') applyFps(); // the FPS may have changed while the picker was open
+      },
       onMessage: addMessage,
     },
   });
@@ -132,17 +140,21 @@ $('btn-mic').onclick = () => {
 const canShare = !!navigator.mediaDevices?.getDisplayMedia;
 $('btn-screen').hidden = $('screen-fps').hidden = !canShare;
 const fps = () => Number($('screen-fps').value);
-$('screen-fps').onchange = () => session?.sharing && session.room.setScreenFps(fps());
-$('btn-screen').onclick = async () => {
-  const label = () => ($('btn-screen').textContent = 'Ekran paylaş');
-  if (session.sharing) {
-    session.sharing = false;
-    session.room.stopScreen();
-    return label();
-  }
-  if (await session.room.startScreen(fps(), () => { session.sharing = false; label(); })) {
-    session.sharing = true;
-    $('btn-screen').textContent = 'Paylaşımı durdur';
+
+async function applyFps() {
+  const s = session;
+  const want = fps();
+  if (want === s.appliedFps) return;
+  if (await s.room.setScreenFps(want)) s.appliedFps = want;
+  else if (s === session) $('screen-fps').value = String(s.appliedFps); // show what is really in effect
+}
+
+$('screen-fps').onchange = () => session?.screenState === 'on' && applyFps();
+$('btn-screen').onclick = () => {
+  if (session.screenState === 'on') return session.room.stopScreen();
+  if (session.screenState === 'off') {
+    session.appliedFps = fps();
+    session.room.startScreen(session.appliedFps);
   }
 };
 
@@ -162,6 +174,7 @@ function leave() {
   session = null;
   $('screens').replaceChildren();
   $('btn-screen').textContent = 'Ekran paylaş';
+  $('btn-screen').disabled = false;
   $('btn-mic').textContent = 'Mikrofonu kapat';
   $('screen-room').hidden = true;
   $('screen-join').hidden = false;

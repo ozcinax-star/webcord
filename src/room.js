@@ -50,13 +50,22 @@ export function joinRoom({ code, nick, stream, handlers }) {
     else handlers.onStream(peerId, s);
   };
 
+  const fpsConstraint = (fps) => ({ frameRate: { ideal: fps, max: fps } });
+  let screenState = 'off'; // 'off' | 'starting' | 'on'; the single source of truth for sharing
+  let left = false;
+  const setScreenState = (state) => {
+    screenState = state;
+    handlers.onScreenState(state);
+  };
+
   const stopScreen = () => {
-    if (!screen) return;
+    if (screenState !== 'on') return;
     const s = screen;
     screen = null;
     room.removeStream(s);
     s.getTracks().forEach((t) => t.stop());
     screenAction.send('off');
+    setScreenState('off');
   };
 
   return {
@@ -68,23 +77,40 @@ export function joinRoom({ code, nick, stream, handlers }) {
     setMic(enabled) {
       stream?.getAudioTracks().forEach((t) => (t.enabled = enabled));
     },
-    async startScreen(fps, onEnded) {
-      if (screen) return true;
+    async startScreen(fps) {
+      if (screenState !== 'off' || left) return;
+      setScreenState('starting');
+      let captured;
       try {
-        screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: fps, max: fps } }, audio: false });
+        captured = await navigator.mediaDevices.getDisplayMedia({ video: fpsConstraint(fps), audio: false });
+      } catch {
+        if (!left) setScreenState('off');
+        return;
+      }
+      if (left) {
+        // The room was left while the picker was open: release the capture immediately.
+        captured.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      screen = captured;
+      screen.getVideoTracks()[0].onended = stopScreen;
+      room.addStream(screen, { metadata: { type: 'screen' } });
+      setScreenState('on');
+    },
+    async setScreenFps(fps) {
+      const track = screen?.getVideoTracks()[0];
+      if (!track) return false;
+      try {
+        await track.applyConstraints(fpsConstraint(fps));
+        return true;
       } catch {
         return false;
       }
-      screen.getVideoTracks()[0].onended = () => { stopScreen(); onEnded(); };
-      room.addStream(screen, { metadata: { type: 'screen' } });
-      return true;
-    },
-    setScreenFps(fps) {
-      screen?.getVideoTracks()[0]?.applyConstraints({ frameRate: { ideal: fps, max: fps } }).catch(() => {});
     },
     stopScreen,
     leave() {
       stopScreen();
+      left = true;
       room.leave();
     },
   };
