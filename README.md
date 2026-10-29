@@ -16,5 +16,5 @@ Takma adını yaz, "Oda oluştur" de, çıkan kodu veya "Linki kopyala" ile ald�
 
 ## Notlar
 - Eşleşme genel BitTorrent tracker'ları üzerinden yapılır (Trystero); kendi sunucun yoktur.
-- TURN sunucusu yok: çok sıkı NAT/güvenlik duvarı arkasındaki bazı kullanıcılar bağlanamayabilir.
+- Doğrudan bağlanamayan oyuncular için ses ExpressTURN (ücretsiz plan, UDP) üzerinden aktarılır; bilgiler `src/config.js` içinde ve herkese açıktır. UDP tamamen engelli ağlarda bağlantı yine kurulamayabilir.
 - Bir oda kodunu bilen herkes odaya girebilir; kodu sadece arkadaşlarınla paylaş.

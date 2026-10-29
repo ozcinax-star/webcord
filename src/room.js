@@ -1,10 +1,11 @@
 import { joinRoom as trysteroJoin, selfId } from 'https://cdn.jsdelivr.net/npm/@trystero-p2p/torrent@0.26.0/+esm';
 import { uniqueNicks, cleanMessage } from './logic.js';
+import { TURN_SERVERS } from './config.js';
 
 const APP_ID = 'webcord-v1';
 
 export function joinRoom({ code, nick, stream, handlers }) {
-  const room = trysteroJoin({ appId: APP_ID }, code);
+  const room = trysteroJoin({ appId: APP_ID, turnConfig: TURN_SERVERS }, code);
   const nicks = new Map([[selfId, nick]]); // peerId -> nick; self first, then join order
   const nickAction = room.makeAction('nick');
   const chatAction = room.makeAction('chat');
