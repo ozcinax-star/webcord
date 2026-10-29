@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webcord</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <section id="screen-join">
+      <h1>Webcord</h1>
+      <p class="muted">Hesapsız sesli sohbet. Takma ad ve oda kodu yeterli.</p>
+      <label>Takma ad <input id="nick" maxlength="20" autocomplete="off"></label>
+      <label>Oda kodu <input id="code" maxlength="10" autocomplete="off" placeholder="ABC234"></label>
+      <div class="row">
+        <button id="btn-join">Katıl</button>
+        <button id="btn-create" class="secondary">Oda oluştur</button>
+      </div>
+      <p id="join-error" class="error" role="alert"></p>
+    </section>
+
+    <section id="screen-room" hidden>
+      <header>
+        <div>Oda: <strong id="room-code"></strong></div>
+        <button id="btn-copy" class="secondary">Linki kopyala</button>
+      </header>
+      <p id="mic-warning" class="warn" hidden>Mikrofon kullanılamıyor; sadece dinleyici ve yazılı sohbet olarak katıldın.</p>
+      <p id="size-warning" class="warn" hidden>Oda 6 kişiden büyük; ses kalitesi düşebilir.</p>
+      <ul id="peer-list"></ul>
+      <div class="row">
+        <button id="btn-mic">Mikrofonu kapat</button>
+        <button id="btn-leave" class="secondary">Ayrıl</button>
+      </div>
+      <div id="chat-log" aria-live="polite"></div>
+      <form id="chat-form" class="row">
+        <input id="chat-input" maxlength="300" autocomplete="off" placeholder="Mesaj yaz...">
+        <button type="submit">Gönder</button>
+      </form>
+    </section>
+  </main>
+  <div id="audio-sink"></div>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
