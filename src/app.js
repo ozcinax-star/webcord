@@ -50,8 +50,25 @@ async function join() {
         s.stops.get(id)?.(); s.stops.delete(id);
         s.audios.get(id)?.remove(); s.audios.delete(id);
         s.speaking.delete(id);
+        removeScreen(id);
         renderPeers();
       },
+      onScreen(id, remote) {
+        removeScreen(id);
+        const fig = document.createElement('figure');
+        fig.dataset.peer = id;
+        const cap = document.createElement('figcaption');
+        cap.textContent = `${s.peers.find((p) => p.id === id)?.name ?? 'Biri'} ekranını paylaşıyor`;
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.controls = true;
+        video.srcObject = remote;
+        fig.append(cap, video);
+        $('screens').append(fig);
+      },
+      onScreenStop: removeScreen,
       onMessage: addMessage,
     },
   });
@@ -62,6 +79,10 @@ async function join() {
   $('screen-join').hidden = true;
   $('screen-room').hidden = false;
   renderPeers();
+}
+
+function removeScreen(id) {
+  document.querySelector(`#screens [data-peer="${CSS.escape(id)}"]`)?.remove();
 }
 
 function setSpeaking(id, on) {
@@ -108,6 +129,21 @@ $('btn-mic').onclick = () => {
   if (!session.micOn) setSpeaking('self', false);
 };
 
+const canShare = !!navigator.mediaDevices?.getDisplayMedia;
+$('btn-screen').hidden = !canShare;
+$('btn-screen').onclick = async () => {
+  const label = () => ($('btn-screen').textContent = 'Ekran paylaş');
+  if (session.sharing) {
+    session.sharing = false;
+    session.room.stopScreen();
+    return label();
+  }
+  if (await session.room.startScreen(() => { session.sharing = false; label(); })) {
+    session.sharing = true;
+    $('btn-screen').textContent = 'Paylaşımı durdur';
+  }
+};
+
 $('btn-copy').onclick = async () => {
   const url = `${location.origin}${location.pathname}?oda=${session.code}`;
   try { await navigator.clipboard.writeText(url); $('btn-copy').textContent = 'Kopyalandı'; }
@@ -122,6 +158,8 @@ function leave() {
   session.stream?.getTracks().forEach((t) => t.stop());
   session.room.leave();
   session = null;
+  $('screens').replaceChildren();
+  $('btn-screen').textContent = 'Ekran paylaş';
   $('btn-mic').textContent = 'Mikrofonu kapat';
   $('screen-room').hidden = true;
   $('screen-join').hidden = false;

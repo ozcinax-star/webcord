@@ -3,7 +3,7 @@
 Hesapsız sesli + yazılı sohbet. Takma ad ve oda kodu yeterli. Statik site, sunucu ve derleme yok.
 
 ## Kullanım
-Takma adını yaz, "Oda oluştur" de, çıkan kodu veya "Linki kopyala" ile aldığın linki arkadaşlarına gönder. Onlar da kodu girip katılır. Ses doğrudan tarayıcılar arasında akar (WebRTC), hiçbir şey kaydedilmez. 2-6 kişi için uygundur.
+Takma adını yaz, "Oda oluştur" de, çıkan kodu veya "Linki kopyala" ile aldığın linki arkadaşlarına gönder. Onlar da kodu girip katılır. Ses doğrudan tarayıcılar arasında akar (WebRTC), hiçbir şey kaydedilmez. 2-6 kişi için uygundur. "Ekran paylaş" ile ekranını (30 fps, sessiz) odadakilere gösterebilirsin; her izleyici için ayrı yükleme yapılır, çok izleyicide yükleme hızın yetmeyebilir.
 
 ## Yerelde deneme
     python -m http.server 8000     # sonra http://localhost:8000

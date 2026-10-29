@@ -27,17 +27,37 @@ export function joinRoom({ code, nick, stream, handlers }) {
     handlers.onMessage(names.get(peerId) ?? 'Biri', text);
   };
 
+  const screenAction = room.makeAction('screen');
+  let screen = null;
+
+  screenAction.onMessage = (data, { peerId }) => {
+    if (data === 'off') handlers.onScreenStop(peerId);
+  };
+
+  // addStream only reaches peers connected right now, so late joiners get both streams here.
   room.onPeerJoin = (peerId) => {
     nickAction.send(nick, { target: peerId });
+    if (stream) room.addStream(stream, { target: peerId, metadata: { type: 'mic' } });
+    if (screen) room.addStream(screen, { target: peerId, metadata: { type: 'screen' } });
   };
   room.onPeerLeave = (peerId) => {
     nicks.delete(peerId);
     publishPeers();
     handlers.onPeerLeave(peerId);
   };
-  room.onPeerStream = (s, peerId) => handlers.onStream(peerId, s);
+  room.onPeerStream = (s, peerId, meta) => {
+    if (meta?.type === 'screen') handlers.onScreen(peerId, s);
+    else handlers.onStream(peerId, s);
+  };
 
-  if (stream) room.addStream(stream);
+  const stopScreen = () => {
+    if (!screen) return;
+    const s = screen;
+    screen = null;
+    room.removeStream(s);
+    s.getTracks().forEach((t) => t.stop());
+    screenAction.send('off');
+  };
 
   return {
     selfId,
@@ -48,7 +68,20 @@ export function joinRoom({ code, nick, stream, handlers }) {
     setMic(enabled) {
       stream?.getAudioTracks().forEach((t) => (t.enabled = enabled));
     },
+    async startScreen(onEnded) {
+      if (screen) return true;
+      try {
+        screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+      } catch {
+        return false;
+      }
+      screen.getVideoTracks()[0].onended = () => { stopScreen(); onEnded(); };
+      room.addStream(screen, { metadata: { type: 'screen' } });
+      return true;
+    },
+    stopScreen,
     leave() {
+      stopScreen();
       room.leave();
     },
   };
